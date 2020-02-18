@@ -48,7 +48,7 @@ int main(){
     struct sockaddr_in client_name;
     socklen_t client_name_len = sizeof(client_name);
 
-    char buff[512];
+    char buff[] = "this is";
 
 
     printf("start up now\n");
@@ -65,11 +65,19 @@ int main(){
             perror("accept");
             exit(1);
         }
+
+        printf("ready to recv -----");
+        if(write(client_socket, buff, sizeof(buff)) == -1){
+            perror("send");
+            exit(1);
+
+        }
+        /*
         if(recv(client_socket, buff, sizeof(buff), 0) == -1){
             perror("recv");
             exit(1);
         }
-        printf("receive from client is: %s", buff);
+        */
 
         close(client_socket);
 
