@@ -34,8 +34,6 @@ int startup(u_short *port){
         perror("listrn");
         exit(1);
     }
-    //添加动态分配端口
-    printf("start now");
     
     //返回监听套接字描述符
     return sock_d;
@@ -66,18 +64,13 @@ int main(){
             exit(1);
         }
 
-        printf("ready to recv -----");
+        printf("start to write -----");
         if(write(client_socket, buff, sizeof(buff)) == -1){
             perror("send");
             exit(1);
 
         }
-        /*
-        if(recv(client_socket, buff, sizeof(buff), 0) == -1){
-            perror("recv");
-            exit(1);
-        }
-        */
+        printf("write success");
 
         close(client_socket);
 
