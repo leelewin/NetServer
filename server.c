@@ -1,9 +1,3 @@
-/* 这是一个简单的可以实现网络通信的服务器程序
- * 可以通过sokit工具来向该服务器发送数据
- * 使用前请配置好服务器地址和端口
- *
- * /
-*/
 #include<sys/socket.h>
 #include<stdio.h>
 #include<stdlib.h>
@@ -12,6 +6,71 @@
 #include<unistd.h>
 
 int startup(u_short *);
+int get_line(int client, char *buff, int size);
+
+
+
+
+
+/****************************************/
+/*Function:从已连接套接字接收请求报文并解析
+ *
+ *Parameters:指向套接字变量的指针
+ *
+ *Return:无
+ *
+****************************************/
+void accept_request(int *arg){
+    int client = *arg;
+    int numchar = 0; //接收的字符数
+    char buff[2048]; //存储读出的一行数据
+
+    numchar = get_line(client, buff, sizeof(buff));
+
+    printf("%d\n", numchar);
+    printf("%s", buff);
+
+
+
+
+
+
+
+
+
+}
+
+/****************************************/
+/*Function:从指定套接字获取一行
+ *
+ *Parameters:指定的套接字
+             存储数据的地址
+             数据区的大小
+ *
+ *Return:获取的字符个数
+ *
+*****************************************/
+int get_line(int client, char *buff, int size){
+    char c = '\0';
+    int i = 0;
+    int n = 0;
+
+    while((i < size - 1) && (c != '\n')){
+
+        n = recv(client, &c, sizeof(c), 0);
+        if(n > 0){
+            buff[i] = c;
+            i++;
+        }
+        else
+            c = '\n';
+
+    }
+    buff[i] = '\0';
+
+    return i;
+}
+
 
 /*********************************************/
 /*Function:在指定端口监听连接
@@ -77,7 +136,7 @@ int main(){
             perror("accept");
             exit(1);
         }
-
+/*
         printf("start to read -----\n");
 
 
@@ -88,6 +147,9 @@ int main(){
 
         }
         printf("message = %s\n", buff);
+*/
+        
+        accept_request(&client_socket);
 
         close(client_socket);
 
