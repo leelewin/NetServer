@@ -7,6 +7,14 @@
 
 int startup(u_short *);
 
+/*********************************************/
+/*Function:在指定端口监听连接
+ *
+ *Parameters:指向要连接端口变量的指针
+ *
+ *Return: 监听套接字描述符
+*/
+/********************************************/
 int startup(u_short *port){
     int sock_d = 0;
     struct sockaddr_in name;
@@ -46,7 +54,7 @@ int main(){
     struct sockaddr_in client_name;
     socklen_t client_name_len = sizeof(client_name);
 
-    char buff[] = "this is";
+    char buff[100];
 
 
     printf("start up now\n");
@@ -64,13 +72,14 @@ int main(){
             exit(1);
         }
 
-        printf("start to write -----");
-        if(write(client_socket, buff, sizeof(buff)) == -1){
+        printf("start to read -----\n");
+
+        if(read(client_socket, buff, sizeof(buff)) == -1){
             perror("send");
             exit(1);
 
         }
-        printf("write success");
+        printf("message = %s\n", buff);
 
         close(client_socket);
 
