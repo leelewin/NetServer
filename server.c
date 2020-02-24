@@ -1,3 +1,9 @@
+/* 这是一个简单的可以实现网络通信的服务器程序
+ * 可以通过sokit工具来向该服务器发送数据
+ * 使用前请配置好服务器地址和端口
+ *
+ * /
+*/
 #include<sys/socket.h>
 #include<stdio.h>
 #include<stdlib.h>
@@ -74,6 +80,8 @@ int main(){
 
         printf("start to read -----\n");
 
+
+        //从客户端读数据
         if(read(client_socket, buff, sizeof(buff)) == -1){
             perror("send");
             exit(1);
