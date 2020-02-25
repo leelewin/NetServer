@@ -7,11 +7,17 @@
 #include<ctype.h>
 #include<strings.h>
 
+#define SERVER "Server: LMltiny/2.0"
+
 int startup(u_short *);
 void accept_request(int *arg);
 int get_line(int client, char *buff, int size);
 void unimplement(int client);
 int analysis_url(char *url, char *filename, char *argstr);
+void not_found(int client);
+void headers(int client, const char *filename);
+void cat(int client, FILE *resource);
+void serve_file(int client, char *filename);
 
 
 /****************************************/
@@ -68,11 +74,109 @@ void accept_request(int *arg){
     //printf("%d\n", is_static);
     //printf("%s\n", filename);
     //printf("%s\n", argstr);
+    
+    //待添加文件权限验证
+    
+    if(is_static == 0){
+        serve_file(client, filename);
+
+    }
+    else{
+        //execte_cgi(client, filename, argstr);
+
+    }
 
 
 
 }
 
+/********************************************/
+
+
+
+/********************************************/
+void serve_file(int client, char *filename){
+    FILE *resource = NULL;
+    int numchars = 1;
+    char buf[1024];
+
+    buf[0] = 'A'; buf[1] = '\0';
+    while ((numchars > 0) && strcmp("\n", buf))  /* read & discard headers */
+        numchars = get_line(client, buf, sizeof(buf));
+
+    resource = fopen(filename, "r");
+    if (resource == NULL)
+        not_found(client);
+    else
+    {
+        headers(client, filename);
+        cat(client, resource);
+    }
+    fclose(resource);
+
+
+}
+/*************************************/
+
+
+/*************************************/
+void cat(int client, FILE *resource)
+{
+    char buf[1024];
+
+    fgets(buf, sizeof(buf), resource);
+    while (!feof(resource))
+    {
+        send(client, buf, strlen(buf), 0);
+        fgets(buf, sizeof(buf), resource);
+    }
+}
+//************************************/
+//
+//
+//************************************/
+void headers(int client, const char *filename)
+{
+    char buf[1024];
+    (void)filename;  /* could use filename to determine file type */
+
+    strcpy(buf, "HTTP/1.0 200 OK\r\n");
+    send(client, buf, strlen(buf), 0);
+    strcpy(buf, SERVER);
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "Content-Type: text/html\r\n");
+    send(client, buf, strlen(buf), 0);
+    strcpy(buf, "\r\n");
+    send(client, buf, strlen(buf), 0);
+}
+
+/****************************************/
+
+
+/****************************************/
+void not_found(int client)
+{
+    char buf[1024];
+
+    sprintf(buf, "HTTP/1.0 404 NOT FOUND\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, SERVER);
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "Content-Type: text/html\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "<HTML><TITLE>Not Found</TITLE>\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "<BODY><P>The server could not fulfill\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "your request because the resource specified\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "is unavailable or nonexistent.\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "</BODY></HTML>\r\n");
+    send(client, buf, strlen(buf), 0);
+}
 /**********************************************/
 /*Function: 将url分割成filename和argstr两部分
  *          对于url为'/'情况添加默认的index.html
@@ -92,10 +196,7 @@ int analysis_url(char *url, char *filename, char *argstr){
     if(*query_string == '?'){//动态
         *query_string = '\0';
         strcpy(filename, url);
-        //filename = url;
         strcpy(argstr, query_string + 1);
-        //query_string++;
-        //argstr = query_string;
         return 1;
     }
     else{ //静态
