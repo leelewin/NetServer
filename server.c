@@ -65,24 +65,9 @@ void accept_request(int *arg){
 
     is_static = analysis_url(url, filename, argstr);
 
-    /*
-    if(strcasecmp(method, "POST") == 0){
-
-
-
-
-
-    }
-
-    if(strcasecmp(method, "GET") == 0){
-
-
-
-    }
-    */
-    printf("%d\n", is_static);
-    printf("%s\n", filename);
-    printf("%s\n", argstr);
+    //printf("%d\n", is_static);
+    //printf("%s\n", filename);
+    //printf("%s\n", argstr);
 
 
 
@@ -106,8 +91,8 @@ int analysis_url(char *url, char *filename, char *argstr){
 
     if(*query_string == '?'){//动态
         *query_string = '\0';
-        //strcpy()
-        filename = url;
+        strcpy(filename, url);
+        //filename = url;
         strcpy(argstr, query_string + 1);
         //query_string++;
         //argstr = query_string;
