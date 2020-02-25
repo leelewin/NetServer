@@ -4,12 +4,14 @@
 #include<string.h>
 #include<netinet/in.h>
 #include<unistd.h>
+#include<ctype.h>
+#include<strings.h>
 
 int startup(u_short *);
+void accept_request(int *arg);
 int get_line(int client, char *buff, int size);
-
-
-
+void unimplement(int client);
+int analysis_url(char *url, char *filename, char *argstr);
 
 
 /****************************************/
@@ -22,13 +24,114 @@ int get_line(int client, char *buff, int size);
 ****************************************/
 void accept_request(int *arg){
     int client = *arg;
-    int numchar = 0; //接收的字符数
-    char buff[2048]; //存储读出的一行数据
+    int numchar = 0; //读取一行接收的字符数
+    char buff[1024]; //存储读出的一行数据
+    char method[512]; 
+    char url[1024];
+    char filename[1024];
+    char argstr[1024];
+    int i = 0;
+    int j;
+    int is_static = 0;  //is_static为0访问的静态内容，为1访问的动态内容
 
     numchar = get_line(client, buff, sizeof(buff));
 
     printf("%d\n", numchar);
-    printf("%s", buff);
+    printf("%s\n", buff);
+
+    while(!isspace((int)buff[i]) && (i < numchar - 1)){
+        method[i] = buff[i];
+        i++;
+    }
+    method[i] = '\0';
+
+    printf("%s\n", method);
+    //不是GET 和 POST方法则返回客户端无法实现
+    if(strcasecmp(method, "GET") && strcasecmp(method, "POST")){
+        unimplement(client);
+        return;
+    }
+
+    while(isspace((int)buff[i]) && i < numchar - 1)
+        i++;
+
+    j = 0;
+    while(!isspace((int)buff[i]) && i < numchar - 1){
+        url[j] = buff[i];
+        i++;
+        j++;
+    }
+    url[j] = '\0';
+
+    is_static = analysis_url(url, filename, argstr);
+
+    /*
+    if(strcasecmp(method, "POST") == 0){
+
+
+
+
+
+    }
+
+    if(strcasecmp(method, "GET") == 0){
+
+
+
+    }
+    */
+    printf("%d\n", is_static);
+    printf("%s\n", filename);
+    printf("%s\n", argstr);
+
+
+
+}
+
+/**********************************************/
+/*Function: 将url分割成filename和argstr两部分
+ *          对于url为'/'情况添加默认的index.html
+ *
+ *Parameters: 指向url的指针
+              指向filename的指针
+              指向argstr的指针
+ *
+ *return: 0 or 1
+**********************************************/
+int analysis_url(char *url, char *filename, char *argstr){
+    char *query_string = url;
+
+    while((*query_string != '?') && (*query_string != '\0'))
+        query_string++;
+
+    if(*query_string == '?'){//动态
+        *query_string = '\0';
+        //strcpy()
+        filename = url;
+        strcpy(argstr, query_string + 1);
+        //query_string++;
+        //argstr = query_string;
+        return 1;
+    }
+    else{ //静态
+        sprintf(filename, "htl%s", url);
+        if(filename[strlen(filename)-1] == '/'){
+            strcat(filename, "index.html");
+
+        }
+        strcpy(argstr, "");
+        return 0;
+
+    }
+}
+/***************************************************/
+/*Function:通知客户端方法没有实现
+*
+*Parameters:已连接套接字
+*
+*Return:无
+***************************************************/
+void unimplement(int client){
 
 
 
@@ -136,21 +239,10 @@ int main(){
             perror("accept");
             exit(1);
         }
-/*
-        printf("start to read -----\n");
-
-
-        //从客户端读数据
-        if(read(client_socket, buff, sizeof(buff)) == -1){
-            perror("send");
-            exit(1);
-
-        }
-        printf("message = %s\n", buff);
-*/
         
         accept_request(&client_socket);
 
+        printf("end\n");
         close(client_socket);
 
     }
