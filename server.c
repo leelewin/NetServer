@@ -7,7 +7,7 @@
 #include<ctype.h>
 #include<strings.h>
 
-#define SERVER "Server: LMltiny/2.0"
+#define SERVER "Server: LMltiny/2.0/r/n"
 
 int startup(u_short *);
 void accept_request(int *arg);
@@ -72,7 +72,7 @@ void accept_request(int *arg){
     is_static = analysis_url(url, filename, argstr);
 
     //printf("%d\n", is_static);
-    //printf("%s\n", filename);
+    printf("%s\n", filename);
     //printf("%s\n", argstr);
     
     //待添加文件权限验证
@@ -101,14 +101,19 @@ void serve_file(int client, char *filename){
     char buf[1024];
 
     buf[0] = 'A'; buf[1] = '\0';
-    while ((numchars > 0) && strcmp("\n", buf))  /* read & discard headers */
-        numchars = get_line(client, buf, sizeof(buf));
+    printf("enter\n");
+    //while ((numchars > 0) && strcmp("\n", buf))  /* read & discard headers */
+     //   numchars = get_line(client, buf, sizeof(buf));
+
 
     resource = fopen(filename, "r");
-    if (resource == NULL)
+    if (resource == NULL){
+        printf("noopen\n");
         not_found(client);
+    }        
     else
     {
+        printf("open\n");
         headers(client, filename);
         cat(client, resource);
     }
@@ -140,14 +145,15 @@ void headers(int client, const char *filename)
     char buf[1024];
     (void)filename;  /* could use filename to determine file type */
 
-    strcpy(buf, "HTTP/1.0 200 OK\r\n");
+    strcpy(buf, "HTTP/1.1 200 OK\r\n");
     send(client, buf, strlen(buf), 0);
-    strcpy(buf, SERVER);
-    send(client, buf, strlen(buf), 0);
+//    strcpy(buf, SERVER);
+  //  send(client, buf, strlen(buf), 0);
     sprintf(buf, "Content-Type: text/html\r\n");
     send(client, buf, strlen(buf), 0);
     strcpy(buf, "\r\n");
     send(client, buf, strlen(buf), 0);
+    printf("header\n");
 }
 
 /****************************************/
@@ -200,7 +206,7 @@ int analysis_url(char *url, char *filename, char *argstr){
         return 1;
     }
     else{ //静态
-        sprintf(filename, "htl%s", url);
+        sprintf(filename, "./htl%s", url);
         if(filename[strlen(filename)-1] == '/'){
             strcat(filename, "index.html");
 
@@ -239,6 +245,38 @@ void unimplement(int client){
  *Return:获取的字符个数
  *
 *****************************************/
+int get_line(int client, char *buff, int size)
+{
+    int i = 0;
+    char c = '\0';
+    int n;
+
+    while ((i < size - 1) && (c != '\n'))
+    {
+        n = recv(client, &c, 1, 0);
+        /* DEBUG printf("%02X\n", c); */
+        if (n > 0)
+        {
+            if (c == '\r')
+            {
+                n = recv(client, &c, 1, MSG_PEEK);
+                /* DEBUG printf("%02X\n", c); */
+                if ((n > 0) && (c == '\n'))
+                    recv(client, &c, 1, 0);
+                else
+                    c = '\n';
+            }
+            buff[i] = c;
+            i++;
+        }
+        else
+            c = '\n';
+    }
+    buff[i] = '\0';
+
+    return(i);
+}
+/*
 int get_line(int client, char *buff, int size){
     char c = '\0';
     int i = 0;
@@ -259,7 +297,7 @@ int get_line(int client, char *buff, int size){
 
     return i;
 }
-
+*/
 
 /*********************************************/
 /*Function:在指定端口监听连接
@@ -329,9 +367,10 @@ int main(){
         accept_request(&client_socket);
 
         printf("end\n");
-        close(client_socket);
+//        close(client_socket);
 
     }
+    close(client_socket);
 
     return 0;
 }
