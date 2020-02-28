@@ -52,8 +52,8 @@ void accept_request(int *arg){
     method[i] = '\0';
 
     printf("%s\n", method);
-    //不是GET 和 POST方法则返回客户端无法实现
-    if(strcasecmp(method, "GET") && strcasecmp(method, "POST")){
+    //不是GET方法则返回客户端无法实现
+    if(strcasecmp(method, "GET")){
         unimplement(client);
         return;
     }
@@ -97,18 +97,9 @@ void accept_request(int *arg){
 /********************************************/
 void serve_file(int client, char *filename){
     FILE *resource = NULL;
-    int numchars = 1;
-    char buf[1024];
-
-    buf[0] = 'A'; buf[1] = '\0';
-    printf("enter\n");
-    //while ((numchars > 0) && strcmp("\n", buf))  /* read & discard headers */
-     //   numchars = get_line(client, buf, sizeof(buf));
-
 
     resource = fopen(filename, "r");
     if (resource == NULL){
-        printf("noopen\n");
         not_found(client);
     }        
     else
@@ -157,31 +148,21 @@ void headers(int client, const char *filename)
 }
 
 /****************************************/
+/*Function: 
+ *
+ *Parameters:
+ *
+ *Return: 
+****************************************/
+void not_found(int client){
 
 
-/****************************************/
-void not_found(int client)
-{
-    char buf[1024];
 
-    sprintf(buf, "HTTP/1.0 404 NOT FOUND\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, SERVER);
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "Content-Type: text/html\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "<HTML><TITLE>Not Found</TITLE>\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "<BODY><P>The server could not fulfill\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "your request because the resource specified\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "is unavailable or nonexistent.\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "</BODY></HTML>\r\n");
-    send(client, buf, strlen(buf), 0);
+
+
+
+
+
 }
 /**********************************************/
 /*Function: 将url分割成filename和argstr两部分
@@ -245,38 +226,6 @@ void unimplement(int client){
  *Return:获取的字符个数
  *
 *****************************************/
-int get_line(int client, char *buff, int size)
-{
-    int i = 0;
-    char c = '\0';
-    int n;
-
-    while ((i < size - 1) && (c != '\n'))
-    {
-        n = recv(client, &c, 1, 0);
-        /* DEBUG printf("%02X\n", c); */
-        if (n > 0)
-        {
-            if (c == '\r')
-            {
-                n = recv(client, &c, 1, MSG_PEEK);
-                /* DEBUG printf("%02X\n", c); */
-                if ((n > 0) && (c == '\n'))
-                    recv(client, &c, 1, 0);
-                else
-                    c = '\n';
-            }
-            buff[i] = c;
-            i++;
-        }
-        else
-            c = '\n';
-    }
-    buff[i] = '\0';
-
-    return(i);
-}
-/*
 int get_line(int client, char *buff, int size){
     char c = '\0';
     int i = 0;
@@ -297,7 +246,7 @@ int get_line(int client, char *buff, int size){
 
     return i;
 }
-*/
+
 
 /*********************************************/
 /*Function:在指定端口监听连接
