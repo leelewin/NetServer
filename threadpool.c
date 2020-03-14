@@ -127,9 +127,10 @@ void *threadpool_thread(void *threadpool){
 
                 //如果线程池中的线程数大于最小值可以结束当前线程
                 if(pool->live_thr_num > pool->min_thr_num){
-                    printf("thread %lx is exiting\n", pthread_self());
+                    printf("thread %lx is exiting, focus\n", pthread_self());
                     pool->live_thr_num--;
                     pthread_mutex_unlock(&(pool->locker));           //这里为什莫不detach,因为pthread_destroy有join回收,不对扩容时会对tid进行覆盖，有问题
+                    pthread_detach(pthread_self());
 
                     pthread_exit(NULL);                              //被骗退出
                 }
@@ -137,9 +138,11 @@ void *threadpool_thread(void *threadpool){
         }
         //如果指定了true,要关闭线程池里的每个线程，自行退出处理
         if(pool->shutdown){
+            pool->live_thr_num--;
             pthread_mutex_unlock(&(pool->locker));
             printf("thread %lx is exiting\n", pthread_self());
                 
+
             pthread_detach(pthread_self());
             pthread_exit(NULL);                   //真正的销毁线程
 
@@ -201,7 +204,9 @@ void *threadpool_manage(void *threadpool){
 
             for(i = 0; i < pool->max_thr_num && add < DEFINE_THREAD_VARY
                              && pool->live_thr_num < pool->max_thr_num; i++){
+                printf("test create\n");
                 if(pool->work_thread[i] == 0 || !is_thread_alive(pool->work_thread[i])){  //查看线程是否活着来复用线程池位置
+
                     pthread_create(&(pool->work_thread[i]), NULL, threadpool_thread, (void *)pool);//这个是覆盖之前的线程id??
                     add++;
                     pool->live_thr_num++;
@@ -237,7 +242,9 @@ int is_thread_alive(pthread_t tid){
 }
 
 void *process(void *arg){
-    printf("thread %lx working\n", pthread_self());
+    printf("thread %lx now in process function\n", pthread_self());
+    int *a = (int *)arg;
+    printf("arg = %d\n", *a);
 
     sleep(2);      //模拟处理任务
 
@@ -302,35 +309,66 @@ int threadpool_destroy(threadpool_t *pool){
     pool->shutdown = true;
     //销毁管理者线程
     pthread_join(pool->manage_thread, NULL);
+    printf("manage thread shut down\n");
 
     for(i = 0; i < pool->live_thr_num; i++){
         pthread_cond_broadcast(&(pool->queue_empty));
     }
-    for(i = 0; i < pool->live_thr_num; i++){
-        pthread_join(pool->work_thread[i], NULL);  //感觉有点不合理
+    printf("signal\n");
+    sleep(20);
+/*
+    for(i = 0; i < pool->max_thr_num; i++){                        //修改 回收线程之前先判断是否还活着，防止join出错
+        printf("%d\n", (int)pool->work_thread[i]);
+        if(pool->work_thread[i] != 0){   //0为非法线程id
+
+  //      if(is_thread_alive(pool->work_thread[i])){                 //应该扫描整个线程池，因为活着的线程不一定就是(0 - live_thr_num
+            if(pthread_join(pool->work_thread[i], NULL) != 0){     //考虑已经销毁的线程池号被重复使用
+                perror("join");
+                exit(1);
+            }                                                          
+            printf("i am live\n");
+        }
+    //    }   
     }
+    for(i = 0; i < pool->live_thr_num; i++){
+        if(pthread_join(pool->work_thread[i], NULL) != 0){
+            perror("join");
+            exit(1);
+        }                                                          //感觉有点不合理
+    }
+    */
+    while(pool->live_thr_num > 0);  //等待所有线程退出，再释放
+    printf("signal2\n");
     threadpool_free(pool);
 
     return 0;
-
 }
 
 int main()
 {
 
 //threadpool_t *threadpoll_create(int min_thr_num, int max_thr_num, int queue_max_size)
-    threadpool_t *tpool = threadpoll_create(3, 100, 100);   //
+    threadpool_t *tpool = threadpoll_create(10, 100,  100);   //
     printf("pool init\n");
 
 
     int num[6] = {1, 2, 3, 4 ,5, 6};
-    for(int  j = 0; j <20; j++){
+    for(int  j = 0; j <100; j++){
     for(int i = 0; i < 6; i++)
         threadpool_add(tpool, process, (void *)&num[i]);
     }
 
-    sleep(10);                       //模拟子线程完成任务
+    sleep(80);                       //模拟子线程完成任务
+    printf("anothrer \n");
+    for(int  j = 0; j <100; j++){
+    for(int i = 0; i < 6; i++)
+        threadpool_add(tpool, process, (void *)&num[i]);
+    }
+
     threadpool_destroy(tpool);
+    printf("destroy all\n");
+    sleep(1000);
+    
 
 
 
