@@ -130,7 +130,7 @@ void *threadpool_thread(void *threadpool){
                     printf("thread %lx is exiting, focus\n", pthread_self());
                     pool->live_thr_num--;
                     pthread_mutex_unlock(&(pool->locker));           //这里为什莫不detach,因为pthread_destroy有join回收,不对扩容时会对tid进行覆盖，有问题
-                    pthread_detach(pthread_self());
+                    //pthread_detach(pthread_self());       //detach is_thread_alive会段错
 
                     pthread_exit(NULL);                              //被骗退出
                 }
@@ -205,8 +205,10 @@ void *threadpool_manage(void *threadpool){
             for(i = 0; i < pool->max_thr_num && add < DEFINE_THREAD_VARY
                              && pool->live_thr_num < pool->max_thr_num; i++){
                 printf("test create\n");
+                printf("%d\n", i);
                 if(pool->work_thread[i] == 0 || !is_thread_alive(pool->work_thread[i])){  //查看线程是否活着来复用线程池位置
 
+                    printf("enter?\n");
                     pthread_create(&(pool->work_thread[i]), NULL, threadpool_thread, (void *)pool);//这个是覆盖之前的线程id??
                     add++;
                     pool->live_thr_num++;
@@ -236,8 +238,16 @@ void *threadpool_manage(void *threadpool){
 }
 
 int is_thread_alive(pthread_t tid){
-    if(pthread_kill(tid, 0) == ESRCH)  //测试线程是否还活着
-        return false;
+    if(tid != 0)  //修改
+    {    
+        printf("alive\n");
+        printf("%lu\n", tid);
+        if(pthread_kill(tid, 0) == ESRCH){
+            pthread_join(tid, NULL);
+            return false;
+
+        }                                                   //测试线程是否还活着
+    }   
     return true;
 }
 
