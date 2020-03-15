@@ -7,6 +7,8 @@
 #include<errno.h>
 #include"threadpool.h"
 
+void *threadpool_thread(void *threadpool);
+void *threadpool_manage(void *threadpool);
 
 int is_thread_alive(pthread_t tid){
     if(tid != 0)  //修改

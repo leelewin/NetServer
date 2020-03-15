@@ -44,10 +44,6 @@ typedef struct threadpool_t{
   返回值：指向线程池结构体的指针 
 */
 extern threadpool_t *threadpoll_create(int min_thr_num, int max_thr_num, int queue_max_size);
-//工作线程
-extern void *threadpool_thread(void *threadpool);
-//管理者线程
-extern void *threadpool_manage(void *threadpool);
 //向任务队列添加任务
 extern int threadpool_add(threadpool_t *pool, void *(*function)(void *), void *arg);
 //销毁线程池
