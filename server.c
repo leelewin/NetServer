@@ -298,7 +298,6 @@ int main(){
     char buff[100];
 
 
-    printf("start up now\n");
 
     server_socket = startup(&port);
     printf("The server is running now in %d port\n", port);
