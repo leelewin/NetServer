@@ -6,9 +6,85 @@
 #include<unistd.h>
 #include<ctype.h>
 #include<strings.h>
+#include<sys/epoll.h>
+#include<fcntl.h>
+#include<time.h>
 #include"service_process.h"
 
+
+#define BUFFLEN 4096
+#define MAX_EVENTS 512
+
 int startup(u_short *);
+struct event_s 
+{
+    int fd;           //要监听的文件描述符
+    int events;
+    void *arg;        //指向自己结构体指针
+    void (*call_back)(int fd, int events, void *arg);  //回调函数
+    int status;       //是否在红黑树上
+    char buff[BUFFLEN];
+    int len;
+    long last_active;   //加入红黑树的时间
+};
+
+int g_root;
+struct event_s g_events[MAX_EVENTS+1];
+
+
+//初始化结构体
+void event_set(struct event_s *ev, int fd, void (*call_back)(int fd, int events, void *arg), void *arg){
+    ev->fd = fd;
+    ev->events = 0;
+    ev->arg = arg;
+    ev->call_back = call_back;
+    ev->status = 0;
+    memset(ev->buff, 0, sizeof(ev->buff));
+    ev->len = 0;
+    ev->last_active = time(NULL);                    //记录上树的时间
+
+    return ;
+
+}
+
+void event_add(int root, int event, struct event_s *ev){
+
+
+
+}
+
+void event_del(){
+
+
+}
+
+void *process_connect(){
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /*********************************************/
@@ -29,6 +105,7 @@ int startup(u_short *port){
         perror("socket");
         exit(1);
     }
+    fcntl(sock_d, F_SETFL, O_NONBLOCK);        //设置为非阻塞套接字
     memset(&name, 0, sizeof(name));
     name.sin_family = AF_INET;
     name.sin_port = htons(*port);
@@ -60,28 +137,47 @@ int main(){
 
     char buff[100];
 
+    g_root = epoll_create(MAX_EVENTS+1);
+
 
 
     server_socket = startup(&port);
     printf("The server is running now in %d port\n", port);
+//void event_set(struct event_s *ev, int fd, void (*call_back)(int fd, int events, void *arg), void *arg){
+    event_set(&g_events[MAX_EVENTS], server_socket, process_connect, &g_events[MAX_EVENTS]);
+//void event_add(int root, int event, struct event_s *ev){
+    event_add(g_root, EPOLLIN, &g_events[MAX_EVENTS]);
+
+    
+
+
+
+
+
+    struct epoll_event ret_events[MAX_EVENTS];         //保存已经满足条件的文件描述符数组
+    int check_pos = 0;
 
     while(1){
-        //返回已连接描述符
-        client_socket = accept(server_socket, 
-               (struct sockaddr *)&client_name, 
-               &client_name_len);
-        if(client_socket == -1){
-            perror("accept");
-            exit(1);
+        //超时验证
+        //
+        //
+        //ggg
+        //
+        //
+        int wait_ret = epoll_wait(g_root, ret_events, MAX_EVENTS+1, 1000);
+        if(wait_ret < 0){
+            perror("epoll_wait");
+            break;
         }
-        
-        accept_request(&client_socket);
-
-        printf("end\n");
-//        close(client_socket);
-
+        for(int i=0; i<wait_ret; i++){
+            struct event_s *ev = (struct event_s *)ret_events[i].data.ptr;
+            if((ret_events[i].events & EPOLLIN) && (ev->events & EPOLLIN)){  //读事件满足
+                ev->call_back(ev->fd, ret_events[i].events, ev->arg);           //回调含糊
+            }
+            if((ret_events[i].events & EPOLLOUT) && (ev->events & EPOLLOUT)){ //写事件满足
+                ev->call_back(ev->fd, ret_events[i].events, ev->arg);
+            }
+        }
     }
-    close(client_socket);
-
     return 0;
 }
