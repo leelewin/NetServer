@@ -28,8 +28,8 @@ struct event_s
     long last_active;   //加入红黑树的时间
 };
 
-int g_root;
-struct event_s g_events[MAX_EVENTS+1];
+int g_root;                                            //红黑树的根结点
+struct event_s g_events[MAX_EVENTS+1];                //???
 
 
 //初始化结构体
@@ -48,44 +48,72 @@ void event_set(struct event_s *ev, int fd, void (*call_back)(int fd, int events,
 }
 
 void event_add(int root, int event, struct event_s *ev){
+    struct epoll_event epv = {0, {0}};
+    int op = 0;                               //有问题
 
+    epv.data.ptr = ev;
+    epv.events = event;
+    ev->events = event;
+
+    if(ev->status == 0){
+        op = EPOLL_CTL_ADD;
+        ev->status = 1;
+    }
+    epoll_ctl(root, op, ev->fd, &epv);
+
+    return ;
+
+}
+
+//从红黑树中删除一个文件描述符
+void event_del(int root, struct event_s *ev){
+    struct epoll_event epv = {0, {0}};
+
+    if(ev->status == 0)
+        return ;
+    epv.data.ptr = NULL;
+    ev->status = 0;                                //修改状态为未在树上
+    epoll_ctl(root, EPOLL_CTL_DEL, ev->fd, &epv);
+
+    return;
+
+}
+
+void receive_data(int fd, int events, void *arg){
+
+
+}
+void send_data(){
 
 
 }
 
-void event_del(){
+void process_connect(int fd, int events, void *arg){
+    int client_socket = -1;
+    struct sockaddr_in client_name;
+    socklen_t client_len = sizeof(client_name);
+    int i;
 
+    client_socket = accept(fd, (struct sockaddr *)&client_name, &client_len);         //将监听套接字转化为已连接套接字
+    do{
+        for(i=0; i < MAX_EVENTS; i++)         //从数组g_events挑出一个空闲的元素
+            if(g_events[i].status == 0)
+                break;
+        if(i == MAX_EVENTS)
+            break;
+        fcntl(client_socket, F_SETFL, O_NONBLOCK);
+
+        event_set(&g_events[i], client_socket, receive_data, &g_events[i]);
+        event_add(g_root, EPOLLIN, &g_events[i]);
+
+        return;
+
+
+    }while(0);
+
+    return;
 
 }
-
-void *process_connect(){
-
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*********************************************/
 /*Function:在指定端口监听连接
@@ -131,11 +159,11 @@ int startup(u_short *port){
 int main(){
     u_short port = 8000;
     int server_socket = -1;
-    int client_socket = -1;
-    struct sockaddr_in client_name;
-    socklen_t client_name_len = sizeof(client_name);
+    //int client_socket = -1;
+    //struct sockaddr_in client_name;
+    //socklen_t client_name_len = sizeof(client_name);
 
-    char buff[100];
+    //char buff[100];
 
     g_root = epoll_create(MAX_EVENTS+1);
 
@@ -147,12 +175,6 @@ int main(){
     event_set(&g_events[MAX_EVENTS], server_socket, process_connect, &g_events[MAX_EVENTS]);
 //void event_add(int root, int event, struct event_s *ev){
     event_add(g_root, EPOLLIN, &g_events[MAX_EVENTS]);
-
-    
-
-
-
-
 
     struct epoll_event ret_events[MAX_EVENTS];         //保存已经满足条件的文件描述符数组
     int check_pos = 0;
