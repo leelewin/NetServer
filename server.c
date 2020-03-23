@@ -9,13 +9,18 @@
 #include<sys/epoll.h>
 #include<fcntl.h>
 #include<time.h>
+#include<errno.h>
+#include<sys/types.h>
 #include"service_process.h"
-
-
+#include<stdint.h>
+#include<sys/stat.h>
+#include <arpa/inet.h>
+#include <sys/wait.h>
 #define BUFFLEN 4096
 #define MAX_EVENTS 512
 
 int startup(u_short *);
+
 struct event_s 
 {
     int fd;           //要监听的文件描述符
@@ -31,6 +36,8 @@ struct event_s
 int g_root;                                            //红黑树的根结点
 struct event_s g_events[MAX_EVENTS+1];                //???
 
+void send_data(int fd, int events, void *arg);
+
 
 //初始化结构体
 void event_set(struct event_s *ev, int fd, void (*call_back)(int fd, int events, void *arg), void *arg){
@@ -39,8 +46,10 @@ void event_set(struct event_s *ev, int fd, void (*call_back)(int fd, int events,
     ev->arg = arg;
     ev->call_back = call_back;
     ev->status = 0;
-    memset(ev->buff, 0, sizeof(ev->buff));
-    ev->len = 0;
+    if(ev->len <= 0){
+        memset(ev->buff, 0, sizeof(ev->buff));
+        ev->len = 0;
+    }
     ev->last_active = time(NULL);                    //记录上树的时间
 
     return ;
@@ -80,10 +89,56 @@ void event_del(int root, struct event_s *ev){
 }
 
 void receive_data(int fd, int events, void *arg){
+    int re;
+
+    struct event_s *ev = (struct event_s *)arg;
+
+    printf("rev fd %d\n", fd);
+    re = read(fd, ev->buff, sizeof(ev->buff));
+    event_del(g_root, ev);
+    if(re < 0){
+        if(re == EAGAIN){
+            printf("the buff of socket is empt\n");
+        }
+        perror("read");
+        exit(1);
+    }
+    else if(re == 0){
+        close(fd);
+        printf("client close the connect\n");
+    }
+    else{
+        ev->len = re;
+        ev->buff[re] = '\0';
+        printf("message = %s\n", ev->buff);
+        event_set(ev, fd, send_data, ev);
+        event_add(g_root, EPOLLOUT, ev);
+
+
+        }
+
 
 
 }
-void send_data(){
+void send_data(int fd, int events, void *arg){
+    struct event_s *ev = (struct event_s *)arg;
+    int len;
+
+    event_del(g_root, ev);
+    printf("send fd %d\n", fd);
+    printf("%d\n", ev->len);
+    len = send(fd, ev->buff, ev->len, 0);
+    if(len > 0){
+        event_set(ev, fd, receive_data, ev);
+        event_add(g_root, EPOLLIN, ev);
+    }
+    else{
+        close(ev->fd);
+        perror("send");
+        exit(1);
+
+    }
+    return ;
 
 
 }
@@ -95,6 +150,7 @@ void process_connect(int fd, int events, void *arg){
     int i;
 
     client_socket = accept(fd, (struct sockaddr *)&client_name, &client_len);         //将监听套接字转化为已连接套接字
+    printf("connect\n");
     do{
         for(i=0; i < MAX_EVENTS; i++)         //从数组g_events挑出一个空闲的元素
             if(g_events[i].status == 0)
@@ -197,6 +253,7 @@ int main(){
                 ev->call_back(ev->fd, ret_events[i].events, ev->arg);           //回调含糊
             }
             if((ret_events[i].events & EPOLLOUT) && (ev->events & EPOLLOUT)){ //写事件满足
+                printf("callback out\n");
                 ev->call_back(ev->fd, ret_events[i].events, ev->arg);
             }
         }
