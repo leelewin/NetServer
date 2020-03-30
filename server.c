@@ -34,7 +34,7 @@ struct event_s
 };
 
 int g_root;                                            //红黑树的根结点
-struct event_s g_events[MAX_EVENTS+1];                //???
+struct event_s g_events[MAX_EVENTS+1];                //最多同时处理的事件数
 
 void send_data(int fd, int events, void *arg);
 
@@ -61,8 +61,8 @@ void event_add(int root, int event, struct event_s *ev){
     int op = 0;                               //有问题
 
     epv.data.ptr = ev;
-    epv.events = event;
-    ev->events = event;
+    epv.events = event | EPOLLET;             //ET模式
+    ev->events = event | EPOLLET;
 
     if(ev->status == 0){
         op = EPOLL_CTL_ADD;
