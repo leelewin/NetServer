@@ -3,7 +3,8 @@
 
 #define SERVER "Server: LMltiny/2.0/r/n"
 
-void accept_request(int *arg);
-int get_line(int client, char *buff, int size);
-void ret_message(int client);
+extern int accept_request(int *arg);
+extern void ret_bad_message(int);
+extern void ret_good_message(int);
+
 #endif

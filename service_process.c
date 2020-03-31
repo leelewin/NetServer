@@ -9,11 +9,8 @@
 #include<strings.h>
 
 #define SERVER "Server: LMltiny/2.0/r/n"
-int return_tag = 0;  //返回客户端成功与否的标志
-
-void accept_request(int *arg);
+int accept_request(int *arg);
 int get_line(int client, char *buff, int size);
-void ret_message(int client);
 
 
 /****************************************/
@@ -24,7 +21,7 @@ void ret_message(int client);
  *Return:无
  *
 ****************************************/
-void accept_request(int *arg){
+int accept_request(int *arg){
     int client = *arg;
     int numchar = 0; //读取一行接收的字符数
     char buff[1024]; //存储读出的一行数据
@@ -33,7 +30,6 @@ void accept_request(int *arg){
     char argstr[1024]; //存储客户机传递过来的参数
     int i = 0;
     int j;
-    return_tag = 0;
 
     numchar = get_line(client, buff, sizeof(buff));
 
@@ -45,13 +41,10 @@ void accept_request(int *arg){
 
     //不是GET方法则返回客户端无法实现
     if(strcasecmp(method, "GET")){
-       // memset(buff, 0, sizeof(buff));
         while((numchar > 0) && strcmp("\n", buff)){
             numchar = get_line(client, buff, sizeof(buff));
         }
-        ret_message(client);
-        close(client);
-        return;
+        return -1;                 //返回客户端无法实现
     }
 
     while(isspace((int)buff[i]) && i < numchar - 1)
@@ -75,14 +68,11 @@ void accept_request(int *arg){
         strcpy(argstr, query_string + 1);
     }
     printf("argstr %s\n", argstr);  //模拟解析argstr包含的数据并插入到数据库中
-    //解析成功return_tag置为一
-    return_tag = 1;
 
     while((numchar > 0) && strcmp("\n", buff)){
         numchar = get_line(client, buff, sizeof(buff));
     }
-    ret_message(client);
-    close(client);
+    return 0;           //成功返回0
 
 }
 
@@ -91,41 +81,41 @@ void accept_request(int *arg){
 //
 //************************************/
 
-void ret_message(int client){
+void ret_bad_message(int client){
     char buf[1024];
 
-    if(return_tag == 0){     //失败返回客户端
-        sprintf(buf, "HTTP/1.0 404 NOT FOUND\r\n");
-        send(client, buf, strlen(buf), 0);
-        sprintf(buf, SERVER);
-        send(client, buf, strlen(buf), 0);
-        sprintf(buf, "Content-Type: text/html\r\n");
-        send(client, buf, strlen(buf), 0);
-        sprintf(buf, "\r\n");
-        send(client, buf, strlen(buf), 0);
+    sprintf(buf, "HTTP/1.0 404 NOT FOUND\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, SERVER);
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "Content-Type: text/html\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "\r\n");
+    send(client, buf, strlen(buf), 0);
 
-        sprintf(buf, "<HTML><TITLE>Not Found</TITLE>\r\n");
-        send(client, buf, strlen(buf), 0);
-        sprintf(buf, "<BODY><P>The server could not fulfill\r\n");
-        send(client, buf, strlen(buf), 0);
-        sprintf(buf, "your request because the resource specified\r\n");
-        send(client, buf, strlen(buf), 0);
-        sprintf(buf, "is unavailable or nonexistent.\r\n");
-        send(client, buf, strlen(buf), 0);
-        sprintf(buf, "</BODY></HTML>\r\n");
-        send(client, buf, strlen(buf), 0);
+    sprintf(buf, "<HTML><TITLE>Not Found</TITLE>\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "<BODY><P>The server could not fulfill\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "your request because the resource specified\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "is unavailable or nonexistent.\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "</BODY></HTML>\r\n");
+    send(client, buf, strlen(buf), 0);
 
 
-    }
-    else{                   //成功返回客户端
-        strcpy(buf, "HTTP/1.1 200 OK\r\n");
-        send(client, buf, strlen(buf), 0);
-        sprintf(buf, "Content-Type: text/html\r\n");
-        send(client, buf, strlen(buf), 0);
-        strcpy(buf, "\r\n");
-        send(client, buf, strlen(buf), 0);
+}
 
-    }
+void ret_good_message(int client){
+    char buf[1024];
+
+    strcpy(buf, "HTTP/1.1 200 OK\r\n");
+    send(client, buf, strlen(buf), 0);
+    sprintf(buf, "Content-Type: text/html\r\n");
+    send(client, buf, strlen(buf), 0);
+    strcpy(buf, "\r\n");
+    send(client, buf, strlen(buf), 0);
 
 }
 
