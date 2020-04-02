@@ -11,13 +11,17 @@
 #include<time.h>
 #include<errno.h>
 #include<sys/types.h>
-#include"service_process.h"
 #include<stdint.h>
 #include<sys/stat.h>
 #include <arpa/inet.h>
 #include <sys/wait.h>
+#include"service_process.h"
+//#include"threadpool.h"
+
 #define BUFFLEN 4096
 #define MAX_EVENTS 512
+//threadpool_t* threadpool;
+void send_data(int fd, int events, void *arg);
 
 int startup(u_short *);
 
@@ -28,15 +32,13 @@ struct event_s
     void *arg;        //指向自己结构体指针
     void (*call_back)(int fd, int events, void *arg);  //回调函数
     int status;       //是否在红黑树上
-    char buff[BUFFLEN];
-    int len;
+    int flag;
     long last_active;   //加入红黑树的时间
 };
 
 int g_root;                                            //红黑树的根结点
 struct event_s g_events[MAX_EVENTS+1];                //最多同时处理的事件数
 
-void send_data(int fd, int events, void *arg);
 
 
 //初始化结构体
@@ -44,12 +46,7 @@ void event_set(struct event_s *ev, int fd, void (*call_back)(int fd, int events,
     ev->fd = fd;
     ev->events = 0;
     ev->arg = arg;
-    ev->call_back = call_back;
-    ev->status = 0;
-    if(ev->len <= 0){
-        memset(ev->buff, 0, sizeof(ev->buff));
-        ev->len = 0;
-    }
+    ev->call_back = call_back; ev->status = 0;
     ev->last_active = time(NULL);                    //记录上树的时间
 
     return ;
@@ -61,8 +58,8 @@ void event_add(int root, int event, struct event_s *ev){
     int op = 0;                               //有问题
 
     epv.data.ptr = ev;
-    epv.events = event | EPOLLET;             //ET模式
-    ev->events = event | EPOLLET;
+    epv.events = event ;//| EPOLLET;             //不能采用ET模式
+    ev->events = event ;//| EPOLLET;
 
     if(ev->status == 0){
         op = EPOLL_CTL_ADD;
@@ -90,32 +87,25 @@ void event_del(int root, struct event_s *ev){
 
 void receive_data(int fd, int events, void *arg){
     int re;
+    char receive_buff[512];
 
     struct event_s *ev = (struct event_s *)arg;
 
     printf("rev fd %d\n", fd);
-    re = read(fd, ev->buff, sizeof(ev->buff));
+    re = accept_request(fd, receive_buff);
     event_del(g_root, ev);
     if(re < 0){
-        if(re == EAGAIN){
-            printf("the buff of socket is empt\n");
-        }
-        perror("read");
-        exit(1);
-    }
-    else if(re == 0){
-        close(fd);
-        printf("client close the connect\n");
+        ev->flag = 0;
     }
     else{
-        ev->len = re;
-        ev->buff[re] = '\0';
-        printf("message = %s\n", ev->buff);
-        event_set(ev, fd, send_data, ev);
-        event_add(g_root, EPOLLOUT, ev);
+        ev->flag = 1;
+        receive_buff[strlen(receive_buff)] = '\0';
+        printf("message = %s\n", receive_buff);
+    }
+    event_set(ev, fd, send_data, ev);
+    event_add(g_root, EPOLLOUT, ev);
 
 
-        }
 
 
 
@@ -123,14 +113,19 @@ void receive_data(int fd, int events, void *arg){
 void send_data(int fd, int events, void *arg){
     struct event_s *ev = (struct event_s *)arg;
     int len;
-
+    const char* buff ;
     event_del(g_root, ev);
-    printf("send fd %d\n", fd);
-    printf("%d\n", ev->len);
-    len = send(fd, ev->buff, ev->len, 0);
+    printf("evflag%d\n", ev->flag);
+
+    if(ev->flag == 1)
+        buff = "HTTP/1.1 200 OK\r\n\r\n<html><h1>good</h1></html>";
+    else
+        buff = "HTTP/1.0 404 NOT FOUND\r\n\r\n<html><h1>bad</h1></html>";
+    len = send(fd, buff, strlen(buff), 0);
     if(len > 0){
-        event_set(ev, fd, receive_data, ev);
-        event_add(g_root, EPOLLIN, ev);
+        close(ev->fd);
+        //event_set(ev, fd, receive_data, ev);
+        //event_add(g_root, EPOLLIN, ev);
     }
     else{
         close(ev->fd);
@@ -150,7 +145,7 @@ void process_connect(int fd, int events, void *arg){
     int i;
 
     client_socket = accept(fd, (struct sockaddr *)&client_name, &client_len);         //将监听套接字转化为已连接套接字
-    printf("connect\n");
+    printf("connect%d\n", client_socket);
     do{
         for(i=0; i < MAX_EVENTS; i++)         //从数组g_events挑出一个空闲的元素
             if(g_events[i].status == 0)
@@ -215,14 +210,10 @@ int startup(u_short *port){
 int main(){
     u_short port = 8000;
     int server_socket = -1;
-    //int client_socket = -1;
-    //struct sockaddr_in client_name;
-    //socklen_t client_name_len = sizeof(client_name);
-
-    //char buff[100];
+    //启动线程池
+//    threadpool = threadpool_create(5, 15, 50);
 
     g_root = epoll_create(MAX_EVENTS+1);
-
 
 
     server_socket = startup(&port);
@@ -253,10 +244,11 @@ int main(){
                 ev->call_back(ev->fd, ret_events[i].events, ev->arg);           //回调含糊
             }
             if((ret_events[i].events & EPOLLOUT) && (ev->events & EPOLLOUT)){ //写事件满足
-                printf("callback out\n");
                 ev->call_back(ev->fd, ret_events[i].events, ev->arg);
             }
         }
     }
+ //   threadpool_destroy(threadpool);
+    close(g_root);
     return 0;
 }

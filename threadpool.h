@@ -43,7 +43,7 @@ typedef struct threadpool_t{
         queue_max_size  任务队列的最大值
   返回值：指向线程池结构体的指针 
 */
-extern threadpool_t *threadpoll_create(int min_thr_num, int max_thr_num, int queue_max_size);
+extern threadpool_t *threadpool_create(int min_thr_num, int max_thr_num, int queue_max_size);
 //向任务队列添加任务
 extern int threadpool_add(threadpool_t *pool, void *(*function)(void *), void *arg);
 //销毁线程池

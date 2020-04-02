@@ -8,8 +8,6 @@
 #include<ctype.h>
 #include<strings.h>
 
-#define SERVER "Server: LMltiny/2.0/r/n"
-int accept_request(int *arg);
 int get_line(int client, char *buff, int size);
 
 
@@ -21,8 +19,7 @@ int get_line(int client, char *buff, int size);
  *Return:无
  *
 ****************************************/
-int accept_request(int *arg){
-    int client = *arg;
+int accept_request(int client, char* receive_buff){
     int numchar = 0; //读取一行接收的字符数
     char buff[1024]; //存储读出的一行数据
     char method[512]; 
@@ -44,7 +41,8 @@ int accept_request(int *arg){
         while((numchar > 0) && strcmp("\n", buff)){
             numchar = get_line(client, buff, sizeof(buff));
         }
-        return -1;                 //返回客户端无法实现
+        return -1;
+                         //返回客户端无法实现
     }
 
     while(isspace((int)buff[i]) && i < numchar - 1)
@@ -68,58 +66,15 @@ int accept_request(int *arg){
         strcpy(argstr, query_string + 1);
     }
     printf("argstr %s\n", argstr);  //模拟解析argstr包含的数据并插入到数据库中
+    strcpy(receive_buff, argstr);
 
     while((numchar > 0) && strcmp("\n", buff)){
         numchar = get_line(client, buff, sizeof(buff));
     }
-    return 0;           //成功返回0
+    return 0;
+               //成功返回0
 
 }
-
-//************************************/
-//
-//
-//************************************/
-
-void ret_bad_message(int client){
-    char buf[1024];
-
-    sprintf(buf, "HTTP/1.0 404 NOT FOUND\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, SERVER);
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "Content-Type: text/html\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "\r\n");
-    send(client, buf, strlen(buf), 0);
-
-    sprintf(buf, "<HTML><TITLE>Not Found</TITLE>\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "<BODY><P>The server could not fulfill\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "your request because the resource specified\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "is unavailable or nonexistent.\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "</BODY></HTML>\r\n");
-    send(client, buf, strlen(buf), 0);
-
-
-}
-
-void ret_good_message(int client){
-    char buf[1024];
-
-    strcpy(buf, "HTTP/1.1 200 OK\r\n");
-    send(client, buf, strlen(buf), 0);
-    sprintf(buf, "Content-Type: text/html\r\n");
-    send(client, buf, strlen(buf), 0);
-    strcpy(buf, "\r\n");
-    send(client, buf, strlen(buf), 0);
-
-}
-
-
 /****************************************/
 /*Function:从指定套接字获取一行
  *

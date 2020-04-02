@@ -1,10 +1,10 @@
 #include<stdio.h>
-#include<pthread.h>
 #include<stdlib.h>
 #include<string.h>
 #include<unistd.h>
 #include<signal.h>
 #include<errno.h>
+#include<pthread.h>
 #include"threadpool.h"
 
 void *threadpool_thread(void *threadpool);
@@ -41,7 +41,7 @@ int threadpool_free(threadpool_t *pool){
     return 0;
 }
 
-threadpool_t *threadpoll_create(int min_thr_num, int max_thr_num, int queue_max_size){
+threadpool_t *threadpool_create(int min_thr_num, int max_thr_num, int queue_max_size){
 
     threadpool_t *pool = NULL;
     do{
