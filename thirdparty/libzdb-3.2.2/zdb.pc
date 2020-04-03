@@ -1,0 +1,12 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libzdb
+Description: A thread-safe multi database connection pool library
+Version: 3.2.2
+
+Requires: 
+Libs: -L${libdir} -lzdb
+Cflags: -I${includedir}/zdb
