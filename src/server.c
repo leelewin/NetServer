@@ -16,7 +16,8 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include"service_process.h"
-//#include"threadpool.h"
+#include"threadpool.h"
+#include"database_process.h"
 
 #define BUFFLEN 4096
 #define MAX_EVENTS 512
@@ -92,7 +93,7 @@ void receive_data(int fd, int events, void *arg){
     struct event_s *ev = (struct event_s *)arg;
 
     printf("rev fd %d\n", fd);
-    re = accept_request(fd, receive_buff);
+    re = accept_request(fd, receive_buff); //对数据进行初步的处理
     event_del(g_root, ev);
     if(re < 0){
         ev->flag = 0;
@@ -101,6 +102,9 @@ void receive_data(int fd, int events, void *arg){
         ev->flag = 1;
         receive_buff[strlen(receive_buff)] = '\0';
         printf("message = %s\n", receive_buff);
+        //threadpool_add(pool, database_process, receive_buff); //将数据传入database_process进行处理
+                                                                //并插入到数据
+        database_process(receive_buff);
     }
     event_set(ev, fd, send_data, ev);
     event_add(g_root, EPOLLOUT, ev);
