@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include<string.h>
-//#include"zdb/zdb.h"
+#include"zdb/zdb.h"
 //#include"zdb/Connection.h"
 //#include"zdb/URL.h"
 //#include"zdb/Exception.h"
-//#include"zdb/SQLException.h"
+#include"zdb/SQLException.h"
 //#include"database_process"
 
 // gcc -I /路径       -lzdb
@@ -137,7 +137,6 @@ CREATE TABLE IF NOT EXISTS track(
 ALTER TABLE register_info CONVERT TO CHARACTER SET utf8;#使用中文字符
 ALTER TABLE track CONVERT TO CHARACTER SET utf8;#使用中文字符
 */
-/*
     URL_T url = URL_new("mysql://localhost/tracks?user=root&password=19951212");
     ConnectionPool_T pool = ConnectionPool_new(url);
     ConnectionPool_start(pool);
@@ -149,7 +148,15 @@ ALTER TABLE track CONVERT TO CHARACTER SET utf8;#使用中文字符
     //不一定对,可能我字符集没有设置好
     
     //涉及另一个表，计划开发一个web页面可以添加信息到register_info表中
-    
+    TRY
+    {
+
+    ResultSet_T r = Connection_executeQuery(con, "select id  from register_info where id=%ld", numb);
+    if(ResultSet_next(r))
+        printf("is not null\n");
+    else
+        printf(" null\n");
+  /*  
     PreparedStatement_T pe;
     pe = Connection_prepareStatement(con, "insert into track(numb, re_time, latitude, longitude,scale) values(?,?,?,?,?)");
     PreparedStatement_setLLong(pe, 1, numb);
@@ -158,15 +165,26 @@ ALTER TABLE track CONVERT TO CHARACTER SET utf8;#使用中文字符
     PreparedStatement_setDouble(pe, 4, longitude);
     PreparedStatement_setInt(pe, 5, scale);
     PreparedStatement_execute(pe);
+    */
+    }
+    CATCH(SQLException)
+    {
+
+    }
+    FINALLY
+    {
+
+    }
+
 
     Connection_close(con);
     ConnectionPool_free(&pool);
     URL_free(&url);
-*/
 }
+
 int main(void)
 {
-    char a[512] = "numb=23432649073&time=1992-04-03%2012:00:00&latitude=116.725241&longitude=26.594446&scale=5";
+    char a[512] = "numb=19853649073time=1992-04-03%2012:00:00&latitude=116.725241&longitude=26.594446&scale=5";
     database_process(a);
 
     return 0;
