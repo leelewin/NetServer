@@ -65,7 +65,6 @@ int accept_request(int client, char* receive_buff){
         *query_string = '\0';
         strcpy(argstr, query_string + 1);
     }
-    printf("argstr %s\n", argstr);  //模拟解析argstr包含的数据并插入到数据库中
     strcpy(receive_buff, argstr);
 
     while((numchar > 0) && strcmp("\n", buff)){

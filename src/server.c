@@ -92,7 +92,6 @@ void receive_data(int fd, int events, void *arg){
 
     struct event_s *ev = (struct event_s *)arg;
 
-    printf("rev fd %d\n", fd);
     re = accept_request(fd, receive_buff); //对数据进行初步的处理
     event_del(g_root, ev);
     if(re < 0){
@@ -101,7 +100,6 @@ void receive_data(int fd, int events, void *arg){
     else{
         ev->flag = 1;
         receive_buff[strlen(receive_buff)] = '\0';
-        printf("message = %s\n", receive_buff);
         threadpool_add(threadpool, database_process, (void*)receive_buff); //将数据传入database_process进行处理
                                                                 //并插入到数据
         //database_process(receive_buff);
@@ -119,7 +117,6 @@ void send_data(int fd, int events, void *arg){
     int len;
     const char* buff ;
     event_del(g_root, ev);
-    printf("evflag%d\n", ev->flag);
 
     if(ev->flag == 1)
         buff = "HTTP/1.1 200 OK\r\n\r\n<html><h1>good</h1></html>";
@@ -149,7 +146,6 @@ void process_connect(int fd, int events, void *arg){
     int i;
 
     client_socket = accept(fd, (struct sockaddr *)&client_name, &client_len);         //将监听套接字转化为已连接套接字
-    printf("connect%d\n", client_socket);
     do{
         for(i=0; i < MAX_EVENTS; i++)         //从数组g_events挑出一个空闲的元素
             if(g_events[i].status == 0)

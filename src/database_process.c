@@ -93,7 +93,6 @@ void* database_process(void* arg){
 
     //对于通过http协议传输的时间，空格会被‘+’或 %20 取代
     //所以需要对收到的字符串进行处理
-    printf("%s\n", re_time);
     int x, y;
     for(x = 0, y = 0; re_time[y]; x++, y++){
         if(re_time[y] == '+')
