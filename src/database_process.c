@@ -8,7 +8,7 @@
 
 
 
-void database_process(void* arg){
+void* database_process(void* arg){
     char data[128];
     strcpy(data, (char*)arg);
 
@@ -132,9 +132,9 @@ CREATE TABLE IF NOT EXISTS track(
 ALTER TABLE register_info CONVERT TO CHARACTER SET utf8;#使用中文字符
 ALTER TABLE track CONVERT TO CHARACTER SET utf8;#使用中文字符
 */
+//A connection pool is created default with 5 initial connections and with 20 maximum connections
 
-
-    URL_T url = URL_new("mysql://localhost/tracks?user=root&password=19951212");
+    URL_T url = URL_new("mysql://localhost/tracks?user=root&password=19951212"); //待修改
     ConnectionPool_T pool = ConnectionPool_new(url);
     ConnectionPool_start(pool);
 
@@ -158,6 +158,8 @@ ALTER TABLE track CONVERT TO CHARACTER SET utf8;#使用中文字符
     Connection_close(con);
     ConnectionPool_free(&pool);
     URL_free(&url);
+
+    return NULL;
 
 }
 
