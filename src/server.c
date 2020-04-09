@@ -21,7 +21,7 @@
 
 #define BUFFLEN 4096
 #define MAX_EVENTS 512
-//threadpool_t* threadpool;
+threadpool_t* threadpool;
 void send_data(int fd, int events, void *arg);
 
 int startup(u_short *);
@@ -102,9 +102,9 @@ void receive_data(int fd, int events, void *arg){
         ev->flag = 1;
         receive_buff[strlen(receive_buff)] = '\0';
         printf("message = %s\n", receive_buff);
-        //threadpool_add(pool, database_process, receive_buff); //将数据传入database_process进行处理
+        threadpool_add(threadpool, database_process, (void*)receive_buff); //将数据传入database_process进行处理
                                                                 //并插入到数据
-        database_process(receive_buff);
+        //database_process(receive_buff);
     }
     event_set(ev, fd, send_data, ev);
     event_add(g_root, EPOLLOUT, ev);
@@ -215,7 +215,7 @@ int main(){
     u_short port = 8000;
     int server_socket = -1;
     //启动线程池
-//    threadpool = threadpool_create(5, 15, 50);
+    threadpool = threadpool_create(5, 20, 30);
 
     g_root = epoll_create(MAX_EVENTS+1);
 
@@ -252,7 +252,7 @@ int main(){
             }
         }
     }
- //   threadpool_destroy(threadpool);
+    threadpool_destroy(threadpool);
     close(g_root);
     return 0;
 }
