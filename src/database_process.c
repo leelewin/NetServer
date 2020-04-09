@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include<string.h>
-#include"zdb/zdb.h"
-#include"zdb/Connection.h"
-#include"zdb/URL.h"
-#include"zdb/Exception.h"
-#include"zdb/SQLException.h"
+//#include"zdb/zdb.h"
+//#include"zdb/Connection.h"
+//#include"zdb/URL.h"
+//#include"zdb/Exception.h"
+//#include"zdb/SQLException.h"
+#include"zdb.h"
 
 
 
@@ -144,17 +145,22 @@ ALTER TABLE track CONVERT TO CHARACTER SET utf8;#使用中文字符
     //结论：libzdb不支持中文编码 
     //不一定对,可能我字符集没有设置好
     
+    ResultSet_T r = Connection_executeQuery(con, "select id  from register_info where id=%ld", numb);
+
     //涉及另一个表，计划开发一个web页面可以添加信息到register_info表中
     
-    PreparedStatement_T pe;
-    pe = Connection_prepareStatement(con, "insert into track(numb, re_time, latitude, longitude,scale) values(?,?,?,?,?)");
-    PreparedStatement_setLLong(pe, 1, numb);
-    PreparedStatement_setString(pe, 2, re_time);
-    PreparedStatement_setDouble(pe, 3, latitude);
-    PreparedStatement_setDouble(pe, 4, longitude);
-    PreparedStatement_setInt(pe, 5, scale);
-    PreparedStatement_execute(pe);
-
+    if(ResultSet_next(r)){ //如果在注册表中找到则执行，否则打印信息或忽略
+        PreparedStatement_T pe;
+        pe = Connection_prepareStatement(con, "insert into track(numb, re_time, latitude, longitude,scale) values(?,?,?,?,?)");
+        PreparedStatement_setLLong(pe, 1, numb);
+        PreparedStatement_setString(pe, 2, re_time);
+        PreparedStatement_setDouble(pe, 3, latitude);
+        PreparedStatement_setDouble(pe, 4, longitude);
+        PreparedStatement_setInt(pe, 5, scale);
+        PreparedStatement_execute(pe);
+    }
+    else
+        printf("Not found in register table\n");
     Connection_close(con);
     ConnectionPool_free(&pool);
     URL_free(&url);
