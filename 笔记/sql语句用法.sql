@@ -1006,6 +1006,39 @@ INSERT INTO register_info(id, real_name, gender, address)VALUES(19854536783, "çŽ
 
 
 SELECT * FROM int_tab;
+SELECT VERSION();
+
+
+
+
+
+SHOW VARIABLES LIKE '%max_allowed_packet%';
+
+
+SET GLOBAL max_allowed_packet = 200 *1024*1024;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
