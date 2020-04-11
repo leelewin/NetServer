@@ -3,7 +3,7 @@
 2.Server端接收来自每个Client的数据，通过解析数据提取核心信息，正确的信息存入数据库中并通知Client成功，错误的消息直接丢弃并通知Clinet失败
 3.数据库维护一个register table，决定某一编号的数据是否接收
 ### 架构模型
-![](https://github.com/LMingl/Project1_NetServer/blob/master/images/项目框架.png)
+![](https://github.com/LMingl/Project1_NetServer/blob/master/images/frame.png)
 
 ### 详细设计
 流程图表示
