@@ -22,7 +22,7 @@ mysql 5.6.47
 3.jmeter并发发送数据   
 
 4.数据落库   
-![](images\落库.png)
+![](https://user-images.githubusercontent.com/47438297/79034620-f2d71600-7be9-11ea-94ba-c9a48cf728d6.png)
 
 5.聚合分析   
 
