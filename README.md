@@ -6,9 +6,9 @@
 ![](https://github.com/LMingl/Project1_NetServer/blob/master/images/frame.png)
 
 ### 详细设计
-流程图表示
-外加语言描述
-
+流程图：
+![](https://github.com/LMingl/Project1_NetServer/blob/master/images/flow1.png)
+![](https://github.com/LMingl/Project1_NetServer/blob/master/images/flow2.png)
 
 
 ### 效果
@@ -22,7 +22,7 @@ mysql 5.6.47
 3.jmeter并发发送数据   
 
 4.数据落库   
-![](https://user-images.githubusercontent.com/47438297/79034620-f2d71600-7be9-11ea-94ba-c9a48cf728d6.png)
+![]()
 
 5.聚合分析   
 
@@ -35,6 +35,7 @@ mysql 5.6.47
 
 ### 参考文献
 
+PS:
 
 
 
